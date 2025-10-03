@@ -348,7 +348,9 @@ python do_deploy_cyclonedx() {
 
         pn_list = read_json(pn_list_filepath)
         for pn_pkg in pn_list["pkgs"]:
-            bom_ref_map[pn_pkg["name"]]=pn_pkg
+            # Secure overwritting of a componant
+            if (pn_pkg["name"] == d.getVar("PN")) or (pn_pkg["name"] not in bom_ref_map) :
+                bom_ref_map[pn_pkg["name"]]= pn_pkg
             alias_map[d.getVar("PN")]=pn_pkg["name"]
 
     for pkg in recipes:
@@ -363,7 +365,10 @@ python do_deploy_cyclonedx() {
 
         pn_list = read_json(pn_list_filepath)
 
-        for pn_pkg in pn_list["pkgs"]:
+        for i, pn_pkg in enumerate(pn_list["pkgs"]):
+            # Avoid duplication
+            if pn_pkg["name"] in bom_ref_map :
+                pn_list["pkgs"][i] = bom_ref_map[pn_pkg["name"]]
             # Avoid multiple pkgs referencing the same cpe
             for sbom_pkg in sbom["components"]:
                 if pn_pkg["cpe"] == sbom_pkg["cpe"]:
