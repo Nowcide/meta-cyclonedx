@@ -368,7 +368,12 @@ python do_deploy_cyclonedx() {
         for i, pn_pkg in enumerate(pn_list["pkgs"]):
             # Avoid duplication
             if pn_pkg["name"] in bom_ref_map :
-                pn_list["pkgs"][i] = bom_ref_map[pn_pkg["name"]]
+                if bom_ref_map[pn_pkg["name"]] not in pn_list["pkgs"]:
+                    for j, dep in enumerate(pn_list["dependencies"]):
+                        if dep["ref"] == pn_pkg["bom-ref"]:
+                            pn_list["dependencies"][j]["ref"] = bom_ref_map[pn_pkg["name"]]["bom-ref"]
+                    pn_list["pkgs"][i] = bom_ref_map[pn_pkg["name"]]
+            
             # Avoid multiple pkgs referencing the same cpe
             for sbom_pkg in sbom["components"]:
                 if pn_pkg["cpe"] == sbom_pkg["cpe"]:
@@ -389,7 +394,7 @@ python do_deploy_cyclonedx() {
 
                 for depends in dep_entry["dependsOn"]:
                     if resolved_ref := resolve_dependency_ref(depends, bom_ref_map, alias_map):
-                        if resolved_ref not in resolved_depends:
+                        if (resolved_ref not in resolved_depends) and (resolved_ref != dep_entry["ref"]):
                             resolved_depends.append(resolved_ref)
 
                             # Add component to isolate file
